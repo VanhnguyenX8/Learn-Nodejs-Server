@@ -31,7 +31,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /var/www/Learn-Nodejs-Server
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             npm install
             npm run build
             pm2 restart todo-app || pm2 start dist/index.js --name todo-app

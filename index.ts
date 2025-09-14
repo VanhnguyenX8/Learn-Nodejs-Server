@@ -40,10 +40,8 @@ app.use('/public', express.static(path.join(__dirname, './public')))
 app.use('/api/auth', AuthRouter);
 app.use('/api/todo', ToDoRouter);
 app.use((req, res, next) => {
-  const error = new Error("This route is not defined.");
-  error.stack = "This route is not defined.";
-  next(error);
-})
+  res.status(404).sendFile(__dirname + '/public/404.html');
+});
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
