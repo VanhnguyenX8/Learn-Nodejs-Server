@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only index.ts",
     "model": "ts-node-dev --respawn --transpile-only models/FavoriteFoodsModel.ts",
-    "build": "tsc && cp -r public dist/public",
+    "build": "tsc && copyfiles public/**/* dist",
     "start": "node index.js"
   },
   "repository": {
@@ -27,6 +27,7 @@
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.3.3",
     "@types/serve-favicon": "^2.5.7",
+    "copyfiles": "^2.4.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   },
