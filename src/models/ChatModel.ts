@@ -30,7 +30,11 @@ ChatModel.init(
     to: { type: DataTypes.STRING, allowNull: false },
     message: { type: DataTypes.TEXT, allowNull: false },
   },
-  { sequelize, tableName: "chat_messages" }
+  {
+    sequelize,
+    tableName: "chat_messages",
+    timestamps: true,
+  }
 );
 
 export default ChatModel;

@@ -8,7 +8,7 @@ export function chatModuls(io: Server) {
     console.log("Connected:", socket.user);
 
     socket.on("private_message", async ({ to, message }) => {
-      const msg = await chatService.saveMessage(socket.user!.id, to, message);
+      const msg = await chatService.saveMessage(socket.user?.id, to, message);
 
       const targetSocket = Array.from(io.sockets.sockets.values()).find(
         s => (s as any).user?.id === to

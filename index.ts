@@ -8,7 +8,6 @@ import path from 'path';
 import favicon from 'serve-favicon';
 
 import { Server } from "socket.io";
-import sequelize from './src/database/Database';
 import { authSocketMiddleware } from './src/middlewares/AuthMiddleware';
 import { chatModuls } from "./src/moduls/chat/ChatModuls";
 import AuthRouter from './src/routers/AuthRouter';
@@ -38,9 +37,9 @@ const limiter = rateLimit({
 })
 
 /// Sync Database
-sequelize.sync({ force: true })
-  .then(() => console.log("Database synced"))
-  .catch(err => console.error("Error syncing DB:", err));
+// sequelize.sync({ force: true })
+//   .then(() => console.log("Database synced"))
+//   .catch(err => console.error("Error syncing DB:", err));
 
 app.use(limiter);
 app.use('/public', express.static(path.join(__dirname, './public')))
