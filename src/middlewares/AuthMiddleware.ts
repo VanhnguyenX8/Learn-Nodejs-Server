@@ -2,6 +2,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { Socket } from "socket.io";
 // Khóa bí mật dùng để ký và xác thực JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'ANHNV';
 
@@ -41,3 +42,19 @@ export const authenticateToken = (
     }
   }
 };
+
+
+export function authSocketMiddleware(socket: Socket, next: (err?: Error) => void) {
+  try {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error("No token provided"));
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as any;
+
+    (socket as any).user = { id: decoded.id, email: decoded.email };
+    next();
+  } catch (err) {
+    next(new Error("Unauthorized"));
+  }
+}
+

@@ -7,8 +7,12 @@ import http from 'http';
 import path from 'path';
 import favicon from 'serve-favicon';
 
+import { Server } from "socket.io";
 import sequelize from './src/database/Database';
+import { authSocketMiddleware } from './src/middlewares/AuthMiddleware';
+import { chatModuls } from "./src/moduls/chat/ChatModuls";
 import AuthRouter from './src/routers/AuthRouter';
+import chatRouter from "./src/routers/ChatRouter";
 import ToDoRouter from './src/routers/TodoRouter';
 import UploadRouter from './src/upload/UpLoadController';
 
@@ -18,6 +22,7 @@ import UploadRouter from './src/upload/UpLoadController';
 const PORT = Number(process.env.PORT ?? 5000);
 const app = express();
 const server = http.createServer(app);
+
 app.use(express.json());
 app.use(cors({
   origin: '*',
@@ -33,7 +38,7 @@ const limiter = rateLimit({
 })
 
 /// Sync Database
-sequelize.sync({ alter: true })
+sequelize.sync({ force: true })
   .then(() => console.log("Database synced"))
   .catch(err => console.error("Error syncing DB:", err));
 
@@ -42,6 +47,14 @@ app.use('/public', express.static(path.join(__dirname, './public')))
 app.use('/api/auth', AuthRouter);
 app.use('/api/todo', ToDoRouter);
 app.use("/api/upload", UploadRouter);
+app.use("/api/chat", chatRouter);
+//* socket io setup 
+const io = new Server(server, { cors: { origin: "*" } });
+// socket auth middleware
+io.use(authSocketMiddleware);
+
+// socket gateway
+chatModuls(io);
 
 app.use((req, res, next) => {
   res.status(404).sendFile(__dirname + '/public/404.html');
