@@ -3,3 +3,4 @@ node_modules/
 # filepath: [.gitignore](http://_vscodecontentref_/4)
 .env
 dist/
+uploads/
