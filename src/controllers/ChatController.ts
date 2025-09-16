@@ -20,7 +20,7 @@ export class ChatController {
     try {
       const currentUserId = String(req.user?.id ?? 0);
       const { to_user_id, content } = req.body;
-      const message = await chatService.saveMessage(currentUserId, to_user_id, content);
+      const message = await chatService.saveMessage({ from: currentUserId, to: to_user_id, message: content });
       return res.status(201).json(successRes({ message }));
     } catch (error) {
       return res.status(500).json(errorRes(error));
