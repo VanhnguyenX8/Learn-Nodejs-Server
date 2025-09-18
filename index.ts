@@ -1,65 +1,75 @@
-
-import cors from 'cors';
-import 'dotenv/config';
-import express from 'express';
-import rateLimit from 'express-rate-limit';
-import http from 'http';
-import path from 'path';
-import favicon from 'serve-favicon';
-
+import cluster from "cluster";
+import cors from "cors";
+import express from "express";
+import http from "http";
+import os from "os";
+import path from "path";
+import favicon from "serve-favicon";
 import { Server } from "socket.io";
-import sequelize from './src/database/Database';
-import { authSocketMiddleware } from './src/middlewares/AuthMiddleware';
+import sequelize from "./src/database/Database";
+import { authSocketMiddleware } from "./src/middlewares/AuthMiddleware";
 import { chatModuls } from "./src/moduls/chat/ChatModuls";
-import AuthRouter from './src/routers/AuthRouter';
+import AuthRouter from "./src/routers/AuthRouter";
 import chatRouter from "./src/routers/ChatRouter";
-import ToDoRouter from './src/routers/TodoRouter';
-import UploadRouter from './src/upload/UpLoadController';
+import ToDoRouter from "./src/routers/TodoRouter";
+import UploadRouter from "./src/upload/UpLoadController";
 
-
-
-
+const numCPUs = os.cpus().length;
 const PORT = Number(process.env.PORT ?? 5000);
-const app = express();
-const server = http.createServer(app);
 
-app.use(express.json());
-app.use(cors({
-  origin: '*',
-  methods: ["POST", "GET", "DELETE"],
-  credentials: true
-}));
-app.use(favicon(path.join(__dirname, 'public', 'logo.png')));
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 600, // limit each IP to 300 requests per window
-  message:
-    "System: Any Requests from you have been blocked for 15 minutes due to excessive requests. Please try again later."
-})
+if (cluster.isPrimary) {
+  console.log(`Master ${process.pid} is running`);
 
-/// Sync Database
-sequelize.sync({ force: true })
-  .then(() => console.log("Database synced"))
-  .catch(err => console.error("Error syncing DB:", err));
+  // Spawn workers cho API
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
 
-app.use(limiter);
-app.use('/public', express.static(path.join(__dirname, './public')))
-app.use('/api/auth', AuthRouter);
-app.use('/api/todo', ToDoRouter);
-app.use("/api/upload", UploadRouter);
-app.use("/api/chat", chatRouter);
-//* socket io setup 
-const io = new Server(server, { cors: { origin: "*" } });
-// socket auth middleware
-io.use(authSocketMiddleware);
+  // Tạo process chạy socket
+  const socketProcess = cluster.fork({ ROLE: "SOCKET" });
 
-// socket gateway
-chatModuls(io);
+  cluster.on("exit", (worker) => {
+    console.log(`Worker ${worker.process.pid} died. Restarting...`);
+    const role = "API";
+    cluster.fork({ ROLE: role });
+  });
 
-app.use((req, res, next) => {
-  res.status(404).sendFile(__dirname + '/public/404.html');
-});
+} else {
+  if (process.env.ROLE === "SOCKET") {
+    // Process này chuyên để chạy socket
+    const app = express();
+    const server = http.createServer(app);
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+    const io = new Server(server, { cors: { origin: "*" } });
+    io.use(authSocketMiddleware);
+    chatModuls(io);
+
+    server.listen(PORT + 1, () => {
+      console.log(`Socket.IO server running on port ${PORT + 1}`);
+    });
+
+  } else {
+    // process này chuyên để chạy API
+    const app = express();
+
+    app.use(express.json());
+    app.use(cors({ origin: "*", methods: ["POST", "GET", "DELETE"], credentials: true }));
+    app.use(favicon(path.join(__dirname, "public", "logo.png")));
+
+    sequelize.sync().then(() => console.log("DB synced"));
+
+    app.use("/public", express.static(path.join(__dirname, "./public")));
+    app.use("/api/auth", AuthRouter);
+    app.use("/api/todo", ToDoRouter);
+    app.use("/api/upload", UploadRouter);
+    app.use("/api/chat", chatRouter);
+
+    app.use((req, res) => {
+      res.status(404).sendFile(__dirname + "/public/404.html");
+    });
+
+    app.listen(PORT, () => {
+      console.log(`API worker ${process.pid} running on port ${PORT}`);
+    });
+  }
+}
