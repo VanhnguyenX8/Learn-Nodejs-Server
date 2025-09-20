@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/AuthMiddleware';
 import ToDo from '../models/TodoModel';
+import { redisCache } from '../redis/RedisCache';
 import { createSuccessRes, errorRes, notfoundRes } from '../utils/BaseRespone';
 
 export default class ToDoController {
@@ -8,6 +9,7 @@ export default class ToDoController {
     try {
       const { title, des, img } = ToDo.fromJson(req.body);
       const todo = await ToDo.create({ title, des, img, userId: req.user!.id });
+      redisCache.del(`/api/todo`); // Xoá cache danh sách todo khi có thay đổi
       return res.status(201).json(createSuccessRes('Todo created successfully', 201, { todo }));
     } catch (error) {
       return res.status(500).json(errorRes({ message: 'Create failed', error }));
@@ -40,7 +42,7 @@ export default class ToDoController {
       const { title, des, img } = ToDo.fromJson(req.body);
       const todo = await ToDo.findOne({ where: { id, userId: req.user!.id } });
       if (!todo) return res.status(404).json(notfoundRes('Not found'));
-
+      redisCache.del(`/api/todo:${id}`); // Xoá cache danh sách todo khi có thay đổi
       await todo.update({ title, des, img });
       return res.json(createSuccessRes('Updated successfully', 200, { todo }));
     } catch (error) {

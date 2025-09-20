@@ -42,6 +42,7 @@
     "lodash": "^4.17.21",
     "multer": "^2.0.2",
     "mysql2": "^3.14.5",
+    "redis": "^5.8.2",
     "sequelize": "^6.37.7",
     "serve-favicon": "^2.5.1",
     "socket.io": "^4.8.1"
