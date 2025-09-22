@@ -10,10 +10,10 @@ import sequelize from "./src/database/Database";
 import { authSocketMiddleware } from "./src/middlewares/AuthMiddleware";
 import { chatModuls } from "./src/moduls/chat/ChatModuls";
 import AuthRouter from "./src/routers/AuthRouter";
-import chatRouter from "./src/routers/ChatRouter";
+import ChatRouter from "./src/routers/ChatRouter";
+import MediaRoute from "./src/routers/MediaRouter";
 import ToDoRouter from "./src/routers/TodoRouter";
 import UploadRouter from "./src/upload/UpLoadController";
-
 const numCPUs = os.cpus().length;
 const PORT = Number(process.env.PORT ?? 5000);
 
@@ -62,8 +62,8 @@ if (cluster.isPrimary) {
     app.use("/api/auth", AuthRouter);
     app.use("/api/todo", ToDoRouter);
     app.use("/api/upload", UploadRouter);
-    app.use("/api/chat", chatRouter);
-
+    app.use("/api/chat", ChatRouter);
+    app.use("/api/media", MediaRoute);
     app.use((req, res) => {
       res.status(404).sendFile(__dirname + "/public/404.html");
     });
